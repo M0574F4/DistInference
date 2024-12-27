@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+url = "https://download.pytorch.org/whl/cu118"
+verify_ssl = true
+name = "downloadpytorch"
+
+[packages]
+torch = "==2.4.0"
+torchvision = "*"
+pillow = "==11.0.0"
+torchaudio = "*"
+scipy = "*"
+matplotlib = "*"
+numpy = "==1.26.4"
+pandas = "==1.5.3"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.9"
