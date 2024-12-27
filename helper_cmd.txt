@@ -2,3 +2,5 @@ cd /project_ghent/Mostafa/ActivityRecognition/DistInference
 #python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+git config --global user.name "mostafa naseri"
+git config --global user.email "mostafa.naseri1991@gmail.com"
