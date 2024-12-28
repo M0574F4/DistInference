@@ -545,3 +545,81 @@ def grid_image_show(image_list, grid_shape=None, titles=None, scale=1.0):
     
     plt.tight_layout()
     plt.show()
+
+
+def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='viridis'):
+    """
+    Plots one or multiple heatmaps from a list of 2D tensors or arrays arranged in a grid.
+
+    Parameters:
+    - data_list (list or array-like): A single 2D tensor/array or a list of 2D tensors/arrays to plot as heatmaps.
+    - grid_shape (tuple, optional): Tuple of (rows, cols) specifying the grid layout. If None, the grid is determined automatically.
+    - titles (list of str, optional): List of titles for each heatmap. Must match the length of data_list.
+    - scale (float, optional): Scaling factor for the figure size. Default is 1.0.
+    - cmap (str, optional): Colormap for the heatmaps. Default is 'viridis'.
+
+    Raises:
+    - ValueError: If the input data does not have 2 dimensions or if titles are provided with incorrect length.
+    """
+    # Ensure data_list is a list
+    if isinstance(data_list, (torch.Tensor, np.ndarray)):
+        data_list = [data_list]
+    elif not isinstance(data_list, list):
+        raise TypeError("data_list must be a list or a single torch.Tensor/np.ndarray.")
+
+    total = len(data_list)
+
+    # Determine grid shape if not provided
+    if grid_shape is None:
+        grid_n = math.ceil(math.sqrt(total))
+        grid_shape = (grid_n, grid_n)
+    
+    rows, cols = grid_shape
+
+    # Validate titles length if provided
+    if titles is not None and len(titles) != total:
+        raise ValueError("Length of titles must match the number of heatmaps to display.")
+
+    # Set up the figure size
+    base_size = 4  # Base size in inches for each subplot
+    fig_width = cols * base_size * scale
+    fig_height = rows * base_size * scale
+    fig, axes = plt.subplots(rows, cols, figsize=(fig_width, fig_height))
+
+    # Flatten axes array for easy iteration if multiple subplots
+    if rows * cols > 1:
+        axes = axes.flatten()
+    else:
+        axes = [axes]
+
+    for i, data in enumerate(data_list):
+        ax = axes[i]
+
+        # Convert torch.Tensor to numpy array if necessary
+        if isinstance(data, torch.Tensor):
+            data = data.detach().cpu().numpy()
+        
+        # Handle different dimensionalities
+        if data.ndim == 3:
+            # If 3D, assume multiple channels and average them for the heatmap
+            data = np.mean(data, axis=0)
+        elif data.ndim != 2:
+            raise ValueError(f"Expected 2D data for heatmap, but got {data.ndim}D data with shape {data.shape}.")
+
+        # Plot the heatmap
+        cax = ax.imshow(data, cmap=cmap, aspect='equal')
+        ax.axis('off')  # Hide axis
+
+        # Set title if provided
+        if titles is not None:
+            ax.set_title(titles[i], fontsize=12)
+
+    # Hide any unused subplots
+    for j in range(total, rows * cols):
+        axes[j].axis('off')
+
+    # Adjust layout and add a colorbar if there's only one heatmap
+    plt.tight_layout()
+    if total == 1:
+        fig.colorbar(cax, ax=axes[0], fraction=0.046, pad=0.04)
+    plt.show()
