@@ -14,9 +14,15 @@ torchvision = "*"
 pillow = "==11.0.0"
 torchaudio = "*"
 scipy = "*"
+transformers = "*"
+accelerate = "*"
+evaluate = "*"
+timm = "*"
 matplotlib = "*"
 numpy = "==1.26.4"
 pandas = "==1.5.3"
+scikit-learn = "*"
+
 
 [dev-packages]
 ipykernel = "*"

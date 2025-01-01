@@ -1,3 +1,10 @@
 venv/
 .venv/
 .vscode/
+key.txt
+wandb/
+results/
+trained_model/
+src/DistInference/results/
+src/DistInference/trained_model/
+.ipynb_checkpoints/

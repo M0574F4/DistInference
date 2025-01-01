@@ -547,7 +547,7 @@ def grid_image_show(image_list, grid_shape=None, titles=None, scale=1.0):
     plt.show()
 
 
-def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='viridis'):
+def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='viridis', heatmap_aspect=1.0):
     """
     Plots one or multiple heatmaps from a list of 2D tensors or arrays arranged in a grid.
 
@@ -557,15 +557,20 @@ def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='virid
     - titles (list of str, optional): List of titles for each heatmap. Must match the length of data_list.
     - scale (float, optional): Scaling factor for the figure size. Default is 1.0.
     - cmap (str, optional): Colormap for the heatmaps. Default is 'viridis'.
+    - heatmap_aspect (float, optional): Aspect ratio for each heatmap (width/height). Default is 1.0.
 
     Raises:
     - ValueError: If the input data does not have 2 dimensions or if titles are provided with incorrect length.
     """
+    import math
+    import numpy as np
+    import matplotlib.pyplot as plt
+
     # Ensure data_list is a list
-    if isinstance(data_list, (torch.Tensor, np.ndarray)):
+    if isinstance(data_list, (np.ndarray)):
         data_list = [data_list]
     elif not isinstance(data_list, list):
-        raise TypeError("data_list must be a list or a single torch.Tensor/np.ndarray.")
+        raise TypeError("data_list must be a list or a single np.ndarray.")
 
     total = len(data_list)
 
@@ -573,7 +578,7 @@ def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='virid
     if grid_shape is None:
         grid_n = math.ceil(math.sqrt(total))
         grid_shape = (grid_n, grid_n)
-    
+
     rows, cols = grid_shape
 
     # Validate titles length if provided
@@ -596,9 +601,9 @@ def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='virid
         ax = axes[i]
 
         # Convert torch.Tensor to numpy array if necessary
-        if isinstance(data, torch.Tensor):
+        if hasattr(data, "detach") and hasattr(data, "cpu"):
             data = data.detach().cpu().numpy()
-        
+
         # Handle different dimensionalities
         if data.ndim == 3:
             # If 3D, assume multiple channels and average them for the heatmap
@@ -607,7 +612,7 @@ def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='virid
             raise ValueError(f"Expected 2D data for heatmap, but got {data.ndim}D data with shape {data.shape}.")
 
         # Plot the heatmap
-        cax = ax.imshow(data, cmap=cmap, aspect='equal')
+        cax = ax.imshow(data, cmap=cmap, aspect=heatmap_aspect)
         ax.axis('off')  # Hide axis
 
         # Set title if provided
@@ -623,3 +628,25 @@ def heatmap_show(data_list, grid_shape=None, titles=None, scale=1.0, cmap='virid
     if total == 1:
         fig.colorbar(cax, ax=axes[0], fraction=0.046, pad=0.04)
     plt.show()
+
+
+import yaml
+def load_config(config_path):
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config
+    
+def add_noise(inputs, noise_level=0.1):
+    """
+    Adds Gaussian noise to the inputs.
+    
+    Args:
+        inputs (torch.Tensor): Input tensor.
+        noise_level (float): Standard deviation of the Gaussian noise.
+        
+    Returns:
+        torch.Tensor: Noisy input tensor.
+    """
+    noise = torch.randn_like(inputs) * noise_level
+    noisy_inputs = inputs + noise
+    return noisy_inputs
