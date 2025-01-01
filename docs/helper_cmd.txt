@@ -2,8 +2,20 @@ cd /project_ghent/Mostafa/ActivityRecognition/DistInference
 #python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
+# .git
+
+# add username
 git config --global user.name "mostafa naseri"
 git config --global user.email "mostafa.naseri1991@gmail.com"
+
+# restore to N commits ago
+git reset --soft HEAD~N
+
+# remove a dir from commit that is in comit while gitignored
+git rm --cached -r rel_dir/
+
+
 
 
 ### Activate env

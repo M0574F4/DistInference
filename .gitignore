@@ -8,3 +8,4 @@ trained_model/
 src/DistInference/results/
 src/DistInference/trained_model/
 .ipynb_checkpoints/
+docs/
