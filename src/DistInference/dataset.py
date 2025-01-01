@@ -332,10 +332,15 @@
 #         # do something...
 #         break
 
-# def worker_init_fn(worker_id):
-#     worker_seed = seed + worker_id
-#     np.random.seed(worker_seed)
-#     random.seed(worker_seed)
+def worker_init_fn(worker_id):
+    # Option A: Use your own scheme (seed + worker_id)
+    worker_seed = (seed + worker_id) % 2**32
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
+    # If using GPU ops in worker (rare), you might also do:
+    torch.cuda.manual_seed_all(worker_seed)
+
 
 
 
@@ -462,11 +467,11 @@ class RadarDataset(Dataset):
 
         return spectrogram_tensor, label_tensor
 
-def worker_init_fn(worker_id):
-    # Note: 'seed' should be passed or made global if used here
-    # Assuming 'seed' is defined globally or passed appropriately
-    # For example, you can modify the function to accept 'seed' as an argument
-    pass  # Implement if necessary
+# def worker_init_fn(worker_id):
+#     # Note: 'seed' should be passed or made global if used here
+#     # Assuming 'seed' is defined globally or passed appropriately
+#     # For example, you can modify the function to accept 'seed' as an argument
+#     pass  # Implement if necessary
 
 def get_dataloaders(
     folds_json_path, 

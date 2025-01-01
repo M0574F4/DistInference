@@ -32,6 +32,11 @@ class ServerModel(nn.Module):
         logits = self.classifier(latent)
         return logits
 
+import torch
+import torch.nn as nn
+import timm
+import random
+
 class My_Model(nn.Module):
     def __init__(self, config):
         super(My_Model, self).__init__()
@@ -44,25 +49,31 @@ class My_Model(nn.Module):
                 - config['model']['input_channels'] (int): Number of input channels (e.g., 1 for grayscale).
                 - config['model']['num_classes'] (int): Number of output classes (e.g., 6).
                 - config['model']['pretrained'] (bool): Whether to use pretrained weights.
+                - config['model']['learn_order_of_importance'] (bool): Whether to enable importance-based masking.
+                - config['model']['max_p'] (float): Maximum percentage of features to randomly mask (0 <= max_p <= 1).
         """
         # Load a pre-trained ResNet model without the classification head
         self.backbone = timm.create_model(
-            model_name=config['model']['name'],                  # e.g., 'resnet50'
-            pretrained=config['model'].get('pretrained', False),# Use pretrained weights if specified
-            in_chans=config['model']['input_channels'],          # 1 for single-channel input
-            num_classes=0,                                       # Removes the classification head
-            global_pool='avg'                                    # Ensures global average pooling is applied
+            model_name=config['model']['name'],                   # e.g., 'resnet50'
+            pretrained=config['model'].get('pretrained', False),  # Use pretrained weights if specified
+            in_chans=config['model']['input_channels'],           # 1 for single-channel input
+            num_classes=0,                                        # Removes the classification head
+            global_pool='avg'                                     # Ensures global average pooling is applied
         )
 
         # Verify the number of features from the backbone
-        expected_num_features = self.backbone.num_features
-        print(f"Backbone '{config['model']['name']}' outputs {expected_num_features} features.")
+        self.expected_num_features = self.backbone.num_features
+        print(f"Backbone '{config['model']['name']}' outputs {self.expected_num_features} features.")
 
         # Define the classification head
-        self.classifier = nn.Linear(expected_num_features, config['model']['num_classes'])
+        self.classifier = nn.Linear(self.expected_num_features, config['model']['num_classes'])
 
         # Define the loss function
         self.loss_fn = nn.CrossEntropyLoss()
+
+        # Optional parameters for importance-based masking
+        self.learn_order_of_importance = config['model'].get('learn_order_of_importance', False)
+        self.max_p = config['model'].get('max_p', 0.0)  # 0.0 means no masking by default
 
     def forward(self, input_ids, labels=None, **kwargs):
         """
@@ -79,8 +90,17 @@ class My_Model(nn.Module):
         """
         x = input_ids  # Map 'input_ids' to 'x'
         features = self.backbone(x)   # Shape: (batch_size, num_features)
-        logits = self.classifier(features)  # Shape: (batch_size, num_classes)
 
+        # --- Importance-based masking (training only) ---
+        if self.learn_order_of_importance and self.training and self.max_p > 0:
+            # Sample a random p in [0, max_p]
+            p = random.uniform(0, self.max_p)
+            k = int(p * features.size(1))  # number of features to mask
+            if k > 0:
+                # Zero out the last k features along dimension=1
+                features[..., -k:] = 0
+
+        logits = self.classifier(features)  # Shape: (batch_size, num_classes)
         output = {'logits': logits}
 
         if labels is not None:

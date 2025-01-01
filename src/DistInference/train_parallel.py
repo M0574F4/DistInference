@@ -140,6 +140,8 @@ def main():
         max_steps=total_train_steps,  # Set the total training steps
         gradient_accumulation_steps=gradient_accumulation_steps,
         ddp_find_unused_parameters=False,  # Optimize DDP training
+        lr_scheduler_type='cosine',  # Set scheduler to cosine annealing
+        warmup_steps=config['training'].get('warmup_steps', 0),  # Optional: Set warmup steps
         # Optionally, set other parameters as needed
     )
 

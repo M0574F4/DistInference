@@ -19,7 +19,7 @@ shuffle:
   test: false
 
 additive_noise_std:
-  train: 0.01
+  train: 0.0
   validation: 0.0
   test: 0.0
 
@@ -38,6 +38,8 @@ model:
   name: "resnet50"  # resnet50 efficientnet_b0
   num_classes: 6            # Replace with your number of classes
   input_channels: 1          # Single-channel input
+  learn_order_of_importance: true
+  max_p: 1
 
 # Training settings
 training:
