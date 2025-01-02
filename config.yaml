@@ -46,11 +46,10 @@ training:
   max_steps: !!float 1e4
   learning_rate: 8e-4
   weight_decay: 1e-2
-  logging_steps: 10
   save_steps: 100
+  logging_steps: 100
   evaluation_strategy: "steps"  # "steps" or "epoch"
   eval_steps: 100
-  save_total_limit: 3
 
 # Inference settings
 inference:

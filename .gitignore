@@ -10,3 +10,6 @@ src/DistInference/trained_model/
 .ipynb_checkpoints/
 docs/
 docs/.ipynb_checkpoints
+notebooks/distributed_inference.ipynb
+notebooks/evaluation.ipynb
+notebooks/get_dataloaders.ipynb

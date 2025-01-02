@@ -18,6 +18,6 @@ source "$PROJECT_DIR/.venv/bin/activate"
 
 echo "Running the train_wandb script..."
 # Run the Python script using the virtual environment's Python interpreter
-python "$PROJECT_DIR/src/DistInference/train_parallel.py"
+python "$PROJECT_DIR/src/DistInference/train.py"
 
 echo "Script execution completed successfully."
