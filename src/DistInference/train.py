@@ -166,6 +166,7 @@ def main():
     # Define paths for checkpoints and final model
     checkpoint_path = Path('./trained_model')  # Directory for checkpoints
     checkpoint_path.mkdir(parents=True, exist_ok=True)  # Ensure it exists
+    shutil.copytree(Path('./src/DistInference'), checkpoint_path / 'DistInference', dirs_exist_ok=True)
 
     final_save_path = Path('./trained_model') / run_name  # Directory for the final model
     final_save_path.mkdir(parents=True, exist_ok=True)  # Ensure it exists
