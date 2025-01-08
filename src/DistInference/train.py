@@ -165,11 +165,15 @@ def main():
 
     # Define paths for checkpoints and final model
     checkpoint_path = Path('./trained_model')  # Directory for checkpoints
-    checkpoint_path.mkdir(parents=True, exist_ok=True)  # Ensure it exists
-    shutil.copytree(Path('./src/DistInference'), checkpoint_path / 'DistInference', dirs_exist_ok=True)
-
-    final_save_path = Path('./trained_model') / run_name  # Directory for the final model
+    final_save_path = checkpoint_path / run_name  # Directory for the final model
     final_save_path.mkdir(parents=True, exist_ok=True)  # Ensure it exists
+
+    checkpoint_path.mkdir(parents=True, exist_ok=True)  # Ensure it exists
+    shutil.copytree(Path('./src/DistInference'), final_save_path / 'DistInference', dirs_exist_ok=True)
+    yaml.dump(config, open(final_save_path / 'config.yaml', 'w'))
+
+
+
 
     # Define a data collator to handle noise addition during training
     def data_collator(batch):
@@ -213,11 +217,11 @@ def main():
     # Log test metrics to wandb
     wandb.log({"test_" + k: v for k, v in test_results.metrics.items()})
 
-    # Optionally remove the 'results' folder if it exists (if it's no longer needed)
-    results_path = Path('./results')
-    if results_path.exists() and results_path.is_dir():
-        shutil.rmtree(results_path)
-        print(f"Removed the 'results' directory at {results_path}")
+    # # Optionally remove the 'results' folder if it exists (if it's no longer needed)
+    # results_path = Path('./results')
+    # if results_path.exists() and results_path.is_dir():
+    #     shutil.rmtree(results_path)
+    #     print(f"Removed the 'results' directory at {results_path}")
 
     # Finish the wandb run
     wandb.finish()
