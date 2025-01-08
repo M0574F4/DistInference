@@ -74,8 +74,11 @@ class My_Model(nn.Module):
         # Optional parameters for importance-based masking
         self.learn_order_of_importance = config['model'].get('learn_order_of_importance', False)
         self.max_p = config['model'].get('max_p', 0.0)  # 0.0 means no masking by default
+        self.mask_distribution=config['model'].get('mask_distribution', 'uniform')
+        self.exponential_distribution_alpha=config['model'].get('exponential_distribution_alpha', 1)
+        
 
-    def forward(self, input_ids, labels=None, **kwargs):
+    def forward(self, input_ids: torch.Tensor, labels: torch.Tensor = None, **kwargs):
         """
         Forward pass of the My_Model.
 
@@ -93,13 +96,30 @@ class My_Model(nn.Module):
 
         # --- Importance-based masking (training only) ---
         if self.learn_order_of_importance and self.training and self.max_p > 0:
-            # Sample a random p in [0, max_p]
-            p = random.uniform(0, self.max_p)
-            k = int(p * features.size(1))  # number of features to mask
-            if k > 0:
-                # Zero out the last k features along dimension=1
-                features[..., -k:] = 0
+            num_features = features.size(1)
+            max_k = int(self.max_p * num_features)
 
+            if max_k > 0:
+                if self.mask_distribution == 'uniform':
+                    # Uniform distribution: sample k uniformly from [0, max_k]
+                    sampled_k = random.randint(0, max_k)
+                elif self.mask_distribution == 'exponential':
+                    # Exponential decay distribution: P(k) ~ exp(-alpha * k)
+                    k_values = torch.arange(0, max_k + 1, device=features.device, dtype=torch.float32)
+                    # Compute unnormalized probabilities
+                    probs = torch.exp(-self.exponential_distribution_alpha * k_values)
+                    # Normalize probabilities
+                    probs /= probs.sum()
+
+                    # Sample k using torch.multinomial
+                    sampled_k_tensor = torch.multinomial(probs, num_samples=1)
+                    sampled_k = sampled_k_tensor.item()
+                else:
+                    raise ValueError(f"Unsupported mask_distribution: {self.mask_distribution}")
+
+                if sampled_k > 0:
+                    # Zero out the last k features along dimension=1
+                    features[..., -sampled_k:] = 0
         logits = self.classifier(features)  # Shape: (batch_size, num_classes)
         output = {'logits': logits}
 

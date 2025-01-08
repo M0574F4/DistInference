@@ -84,7 +84,7 @@ def plot_and_save_normalized_confusion_matrix(
     Returns:
         matplotlib.figure.Figure: The figure object of the plot.
     """
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(6, 6));
     sns.heatmap(
         cm, 
         annot=True,       # Show values in the cells
@@ -105,9 +105,9 @@ def plot_and_save_normalized_confusion_matrix(
 
     if filename:
         fig.savefig(filename)
-    plt.show()
+    # plt.show()
     
-    return fig
+    return fig;
 
 
 ############################################################
@@ -308,7 +308,7 @@ def evaluate_distributed_model_pipeline(
     total_bits=None,
     p_mask=0,
     mask_strategy='last',  # 'norm' or 'last'
-    norm_order=None
+    feature_importance=None
 ):
     """
     Evaluate a split (Edge/Server) model on the given dataloader.
@@ -326,13 +326,15 @@ def evaluate_distributed_model_pipeline(
         p_mask (float): Percentage of features to mask out.
         mask_strategy (str): 'last' or 'norm'. 
             'last' -> Zero out the last p_mask% of features.
-            'norm' -> Use norm_order to identify important features.
-        norm_order (torch.Tensor, optional): Feature importance if using mask_strategy='norm'.
+            'norm' -> Use feature_importance to identify important features.
+        feature_importance (torch.Tensor, optional): Feature importance if using mask_strategy='norm'.
 
     Returns:
         accuracy (float): Accuracy score.
         cm (np.array): Row-normalized confusion matrix (in %).
     """
+    # import numpy as np, matplotlib.pyplot as plt;  plt.plot(np.sort(feature_importance.detach().cpu()), np.arange(1, len(feature_importance)+1)/len(feature_importance), '.'); plt.show()
+
     edge_model.eval()
     server_model.eval()
     all_preds = []
@@ -343,6 +345,7 @@ def evaluate_distributed_model_pipeline(
             inputs, labels = batch[0].to(edge_device), batch[1].to(edge_device)
             # Edge-side forward
             edge_output = edge_model(inputs)
+            # print(torch.min(feature_importance), torch.max(feature_importance))
 
             # Masking logic
             if p_mask > 0:
@@ -356,10 +359,23 @@ def evaluate_distributed_model_pipeline(
                     # Zero out features by importance
                     num_features = edge_output.shape[1]
                     k = int(num_features * (p_mask / 100.0))
-                    threshold = torch.kthvalue(norm_order, k).values
-                    mask_indices = (norm_order >= threshold).float()
+                    
+                    # Handle edge cases where k=0 or k=num_features
+                    k = max(1, min(k, num_features))
+                    
+                    # Get indices of the k least important features
+                    _, indices = torch.topk(feature_importance.abs(), k, largest=False)
+                    # print(feature_importance[indices])
+                    # print(torch.min(feature_importance), torch.max(feature_importance))
+
+
+                    # Create mask: set least important features to zero
+                    mask_indices = torch.ones_like(feature_importance)
+                    mask_indices[indices] = 0
                     mask_indices = mask_indices.unsqueeze(0)
+                    
                     server_input = edge_output * mask_indices
+
                 else:
                     server_input = edge_output
             else:
@@ -405,7 +421,9 @@ def evaluate_timestamped_model(
     total_bits=None,
     p_mask=0,
     mask_strategy='last',
-    norm_order=None
+    feature_importance=None,
+    feature_importance_strategy = None
+
 ):
     """
     Orchestrate loading a timestamped model, retrieving data loaders,
@@ -423,7 +441,7 @@ def evaluate_timestamped_model(
         total_bits (int, optional): Total bits if use_bit_budget=True.
         p_mask (float): Percentage of features to mask out.
         mask_strategy (str): 'last' or 'norm'. 
-        norm_order (torch.Tensor, optional): Feature importance if using mask_strategy='norm'.
+        feature_importance (torch.Tensor, optional): Feature importance if using mask_strategy='norm'.
 
     Returns:
         dict: Dictionary containing evaluation metrics and confusion matrix
@@ -476,9 +494,12 @@ def evaluate_timestamped_model(
         # Distributed
         edge_model = EdgeModel(model)
         server_model = ServerModel(model)
-
-        feature_importance = torch.norm(server_model.classifier.weight.data, p=2, dim=0)
-
+        if feature_importance_strategy == "norm2":
+            feature_importance = torch.norm(server_model.classifier.weight.data, p=2, dim=0)
+        elif feature_importance_strategy == "max_abs":
+            feature_importance = torch.max(torch.abs(server_model.classifier.weight.data), dim=0).values
+            # print(server_model.classifier.weight.data.shape, feature_importance.shape)
+            # print(feature_importance)
         edge_device = device
         server_device = device
         edge_model.to(edge_device)
@@ -498,7 +519,7 @@ def evaluate_timestamped_model(
             total_bits=total_bits,
             p_mask=p_mask,
             mask_strategy=mask_strategy,
-            norm_order=feature_importance
+            feature_importance=feature_importance
         )
 
     # 6. Optionally plot the test confusion matrix
@@ -519,11 +540,11 @@ def evaluate_timestamped_model(
             class_names,
             title="Confusion Matrix (Test Set)",
             filename=plot_filename
-        )
+        );
 
     # 7. Return results
     return {
         "test_accuracy": test_accuracy,
         "test_confusion_matrix": test_cm,
         "fig": fig
-}
+};
