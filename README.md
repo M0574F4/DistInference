@@ -1,6 +1,6 @@
 # DistInference
 
-**DistInference** is a project focused on activity recognition and inference using machine learning techniques. This repository contains all the source code, data processing scripts, and documentation necessary to understand and run the project.
+**DistInference** is a project focused on distributed inference for human activity recognition using machine learning. This repository contains all the source code (including train and test recepie), data processing scripts, and documentation necessary to understand and run the project.
 
 ## Table of Contents
 
